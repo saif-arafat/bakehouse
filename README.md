@@ -1,0 +1,1 @@
+https://docs.databricks.com/aws/en/ldp/best-practices/dimensional-modeling

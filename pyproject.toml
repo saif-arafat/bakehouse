@@ -1,0 +1,39 @@
+[project]
+name = "lakeora"
+version = "0.0.1"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    #
+    # LIMITATION: for pipelines, dependencies are cached during development;
+    # add dependencies to the 'environment' section of your pipeline.yml file instead
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "databricks-dlt",
+    "databricks-connect>=16.4,<16.5",
+    "ipykernel",
+    "databricks-bundles>=1.21.0",
+]
+
+[project.scripts]
+main = "lakeora.main:main"
+apply_tags = "lakeora_core.apply_tags:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# lakeora_core is shared by the pipeline sources and the apply_tags job task
+packages = ["src/lakeora", "src/lakeora_core"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I"]

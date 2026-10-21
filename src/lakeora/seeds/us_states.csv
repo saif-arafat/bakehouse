@@ -1,0 +1,99 @@
+state_from_erp,raw_format,state_code,state_name,type,fips_code,census_region,census_division,capital,is_contiguous_us
+AK,abbreviation,AK,Alaska,State,02,West,Pacific,Juneau,false
+AL,abbreviation,AL,Alabama,State,01,South,East South Central,Montgomery,true
+AR,abbreviation,AR,Arkansas,State,05,South,West South Central,Little Rock,true
+AS,abbreviation,AS,American Samoa,Territory,60,,,Pago Pago,false
+AZ,abbreviation,AZ,Arizona,State,04,West,Mountain,Phoenix,true
+Alabama,full_name,AL,Alabama,State,01,South,East South Central,Montgomery,true
+Alaska,full_name,AK,Alaska,State,02,West,Pacific,Juneau,false
+Arizona,full_name,AZ,Arizona,State,04,West,Mountain,Phoenix,true
+Arkansas,full_name,AR,Arkansas,State,05,South,West South Central,Little Rock,true
+CA,abbreviation,CA,California,State,06,West,Pacific,Sacramento,true
+CO,abbreviation,CO,Colorado,State,08,West,Mountain,Denver,true
+CT,abbreviation,CT,Connecticut,State,09,Northeast,New England,Hartford,true
+California,full_name,CA,California,State,06,West,Pacific,Sacramento,true
+Colorado,full_name,CO,Colorado,State,08,West,Mountain,Denver,true
+Connecticut,full_name,CT,Connecticut,State,09,Northeast,New England,Hartford,true
+DC,abbreviation,DC,District of Columbia,Federal District,11,South,South Atlantic,Washington,true
+DE,abbreviation,DE,Delaware,State,10,South,South Atlantic,Dover,true
+Delaware,full_name,DE,Delaware,State,10,South,South Atlantic,Dover,true
+FM,abbreviation,FM,Federated States of Micronesia,Freely Associated State,64,,,Palikir,false
+Florida,full_name,FL,Florida,State,12,South,South Atlantic,Tallahassee,true
+GA,abbreviation,GA,Georgia,State,13,South,South Atlantic,Atlanta,true
+GU,abbreviation,GU,Guam,Territory,66,,,Hagatna,false
+Georgia,full_name,GA,Georgia,State,13,South,South Atlantic,Atlanta,true
+HI,abbreviation,HI,Hawaii,State,15,West,Pacific,Honolulu,false
+Hawaii,full_name,HI,Hawaii,State,15,West,Pacific,Honolulu,false
+ID,abbreviation,ID,Idaho,State,16,West,Mountain,Boise,true
+IL,abbreviation,IL,Illinois,State,17,Midwest,East North Central,Springfield,true
+IN,abbreviation,IN,Indiana,State,18,Midwest,East North Central,Indianapolis,true
+Idaho,full_name,ID,Idaho,State,16,West,Mountain,Boise,true
+Illinois,full_name,IL,Illinois,State,17,Midwest,East North Central,Springfield,true
+Indiana,full_name,IN,Indiana,State,18,Midwest,East North Central,Indianapolis,true
+Iowa,full_name,IA,Iowa,State,19,Midwest,West North Central,Des Moines,true
+KS,abbreviation,KS,Kansas,State,20,Midwest,West North Central,Topeka,true
+KY,abbreviation,KY,Kentucky,State,21,South,East South Central,Frankfort,true
+Kansas,full_name,KS,Kansas,State,20,Midwest,West North Central,Topeka,true
+Kentucky,full_name,KY,Kentucky,State,21,South,East South Central,Frankfort,true
+Louisiana,full_name,LA,Louisiana,State,22,South,West South Central,Baton Rouge,true
+MA,abbreviation,MA,Massachusetts,State,25,Northeast,New England,Boston,true
+MD,abbreviation,MD,Maryland,State,24,South,South Atlantic,Annapolis,true
+ME,abbreviation,ME,Maine,State,23,Northeast,New England,Augusta,true
+MI,abbreviation,MI,Michigan,State,26,Midwest,East North Central,Lansing,true
+MN,abbreviation,MN,Minnesota,State,27,Midwest,West North Central,Saint Paul,true
+MO,abbreviation,MO,Missouri,State,29,Midwest,West North Central,Jefferson City,true
+MP,abbreviation,MP,Northern Mariana Islands,Territory,69,,,Saipan,false
+MS,abbreviation,MS,Mississippi,State,28,South,East South Central,Jackson,true
+MT,abbreviation,MT,Montana,State,30,West,Mountain,Helena,true
+Maine,full_name,ME,Maine,State,23,Northeast,New England,Augusta,true
+Maryland,full_name,MD,Maryland,State,24,South,South Atlantic,Annapolis,true
+Massachusetts,full_name,MA,Massachusetts,State,25,Northeast,New England,Boston,true
+Michigan,full_name,MI,Michigan,State,26,Midwest,East North Central,Lansing,true
+Minnesota,full_name,MN,Minnesota,State,27,Midwest,West North Central,Saint Paul,true
+Mississippi,full_name,MS,Mississippi,State,28,South,East South Central,Jackson,true
+Missouri,full_name,MO,Missouri,State,29,Midwest,West North Central,Jefferson City,true
+Montana,full_name,MT,Montana,State,30,West,Mountain,Helena,true
+ND,abbreviation,ND,North Dakota,State,38,Midwest,West North Central,Bismarck,true
+NE,abbreviation,NE,Nebraska,State,31,Midwest,West North Central,Lincoln,true
+NH,abbreviation,NH,New Hampshire,State,33,Northeast,New England,Concord,true
+NJ,abbreviation,NJ,New Jersey,State,34,Northeast,Middle Atlantic,Trenton,true
+NM,abbreviation,NM,New Mexico,State,35,West,Mountain,Santa Fe,true
+NV,abbreviation,NV,Nevada,State,32,West,Mountain,Carson City,true
+NY,abbreviation,NY,New York,State,36,Northeast,Middle Atlantic,Albany,true
+Nebraska,full_name,NE,Nebraska,State,31,Midwest,West North Central,Lincoln,true
+Nevada,full_name,NV,Nevada,State,32,West,Mountain,Carson City,true
+New Hampshire,full_name,NH,New Hampshire,State,33,Northeast,New England,Concord,true
+New Jersey,full_name,NJ,New Jersey,State,34,Northeast,Middle Atlantic,Trenton,true
+New Mexico,full_name,NM,New Mexico,State,35,West,Mountain,Santa Fe,true
+New York,full_name,NY,New York,State,36,Northeast,Middle Atlantic,Albany,true
+North Dakota,full_name,ND,North Dakota,State,38,Midwest,West North Central,Bismarck,true
+OH,abbreviation,OH,Ohio,State,39,Midwest,East North Central,Columbus,true
+OK,abbreviation,OK,Oklahoma,State,40,South,West South Central,Oklahoma City,true
+OR,abbreviation,OR,Oregon,State,41,West,Pacific,Salem,true
+Ohio,full_name,OH,Ohio,State,39,Midwest,East North Central,Columbus,true
+Oklahoma,full_name,OK,Oklahoma,State,40,South,West South Central,Oklahoma City,true
+Oregon,full_name,OR,Oregon,State,41,West,Pacific,Salem,true
+PA,abbreviation,PA,Pennsylvania,State,42,Northeast,Middle Atlantic,Harrisburg,true
+PR,abbreviation,PR,Puerto Rico,Territory,72,,,San Juan,false
+PW,abbreviation,PW,Palau,Freely Associated State,70,,,Ngerulmud,false
+Pennsylvania,full_name,PA,Pennsylvania,State,42,Northeast,Middle Atlantic,Harrisburg,true
+RI,abbreviation,RI,Rhode Island,State,44,Northeast,New England,Providence,true
+Rhode Island,full_name,RI,Rhode Island,State,44,Northeast,New England,Providence,true
+South Carolina,full_name,SC,South Carolina,State,45,South,South Atlantic,Columbia,true
+South Dakota,full_name,SD,South Dakota,State,46,Midwest,West North Central,Pierre,true
+TN,abbreviation,TN,Tennessee,State,47,South,East South Central,Nashville,true
+TX,abbreviation,TX,Texas,State,48,South,West South Central,Austin,true
+Tennessee,full_name,TN,Tennessee,State,47,South,East South Central,Nashville,true
+Texas,full_name,TX,Texas,State,48,South,West South Central,Austin,true
+UT,abbreviation,UT,Utah,State,49,West,Mountain,Salt Lake City,true
+Utah,full_name,UT,Utah,State,49,West,Mountain,Salt Lake City,true
+VI,abbreviation,VI,U.S. Virgin Islands,Territory,78,,,Charlotte Amalie,false
+Vermont,full_name,VT,Vermont,State,50,Northeast,New England,Montpelier,true
+Virginia,full_name,VA,Virginia,State,51,South,South Atlantic,Richmond,true
+WA,abbreviation,WA,Washington,State,53,West,Pacific,Olympia,true
+WI,abbreviation,WI,Wisconsin,State,55,Midwest,East North Central,Madison,true
+WV,abbreviation,WV,West Virginia,State,54,South,South Atlantic,Charleston,true
+Washington,full_name,WA,Washington,State,53,West,Pacific,Olympia,true
+West Virginia,full_name,WV,West Virginia,State,54,South,South Atlantic,Charleston,true
+Wisconsin,full_name,WI,Wisconsin,State,55,Midwest,East North Central,Madison,true
+Wyoming,full_name,WY,Wyoming,State,56,West,Mountain,Cheyenne,true

@@ -1,0 +1,5 @@
+export DATABRICKS_CONFIG_PROFILE=free
+export DATABRICKS_SERVERLESS_COMPUTE_ID=auto
+
+# Application ID of the service principal that deploys and runs prod
+export BUNDLE_VAR_prod_service_principal=""

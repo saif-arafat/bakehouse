@@ -1,0 +1,58 @@
+# This file defines the structure of this project and how it is deployed
+# to production using Databricks Asset Bundles.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: lakeora_dlt
+  engine: direct
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+# Resources defined in Python (see resources/__init__.py)
+python:
+  venv_path: .venv
+  resources:
+    - "resources:load_resources"
+
+# Unity Catalog principals granted on the bronze/silver/gold catalogs (see resources/unity_catalog.py)
+variables:
+  uc_developers:
+    description: User or group that reads prod and creates its own dev schemas in every layer catalog
+    default: uc_developers
+  uc_readers:
+    description: Group with read access to the gold catalog
+    default: account users
+  prod_service_principal:
+    description: Application ID of the service principal that deploys and runs prod
+    # set locally with BUNDLE_VAR_prod_service_principal (see .envrc.example)
+
+# Deployment targets.
+# The workspace host comes from the Databricks CLI profile (DATABRICKS_CONFIG_PROFILE).
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+
+  # Deployed by a service principal (sign in with its OAuth credentials), which then owns
+  # the Unity Catalog catalogs/schemas and runs the jobs. Files land in the SP's own home folder.
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${var.prod_service_principal}/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: ${var.prod_service_principal}
+    # the deploying SP keeps CAN_MANAGE whoever deploys; the developer can see and manage its job and bundle files
+    permissions:
+      - service_principal_name: ${var.prod_service_principal}
+        level: CAN_MANAGE
