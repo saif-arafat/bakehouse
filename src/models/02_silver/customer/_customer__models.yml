@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: customer
+    description: >
+      SCD2: one row per version of an ERP customer (customer_id + created date, since the ERP can reuse an id),
+      built from the snp_erp__customer snapshot, with cleaned phone number and the state resolved to its full name.
+    config:
+      tags: ["customer", "pii"]
+      databricks_tags:
+        domain: customer
+        source_system: erp
+        contains_pii: "true"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_id, customer_created_date, customer_valid_from]
+          config:
+            # several changes on one day share a valid_from; only the last one is matchable
+            severity: warn
+    columns:
+      - name: customer_sk
+        data_type: string
+        description: Surrogate key of the version, hash of customer_id, customer_created_date and the snapshot's dbt_valid_from.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_customer
+        data_tests: [unique]
+      - name: customer_durable_sk
+        data_type: string
+        description: Stable key of the customer across versions, hash of customer_id and customer_created_date.
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: customer_is_current
+      - name: customer_id
+        data_type: bigint
+        description: Natural key from the ERP (customerID). Not unique on its own once an id is reused or a customer changes.
+        data_tests: [not_null]
+      - name: customer_created_date
+        data_type: date
+        description: When the ERP created the customer; with customer_id it forms the business key.
+      - name: customer_valid_from
+        data_type: date
+        description: >
+          First sale date this version owns its customer_id. The id's first version opens at 1900-01-01 so sales
+          dated before the created date still resolve; a customer reusing the id starts at its customer_created_date;
+          later versions of a customer start the day the snapshot saw the change.
+      - name: customer_valid_to
+        data_type: date
+        description: >
+          Exclusive end, the date the next version (a change, or a new customer taking over the id) starts.
+          Null for the id's latest version.
+      - name: customer_is_current
+        data_type: boolean
+        description: True for the customer's latest version.
+      - name: customer_full_name
+        data_type: string
+        description: First and last name joined with a space.
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_first_name
+        data_type: string
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_last_name
+        data_type: string
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_email
+        data_type: string
+        config:
+          databricks_tags: {pii: email}
+      - name: customer_phone_number
+        data_type: bigint
+        description: Phone number as digits only, with any extension removed.
+        config:
+          databricks_tags: {pii: phone}
+      - name: raw_phone_number
+        data_type: string
+        description: Phone number exactly as entered in the ERP, kept for auditing the cleaning.
+        config:
+          databricks_tags: {pii: phone}
+      - name: customer_address
+        data_type: string
+        description: Street address.
+        config:
+          databricks_tags: {pii: address}
+      - name: customer_city
+        data_type: string
+      - name: customer_state
+        data_type: string
+        description: Full state name, resolved from the ERP code or name via the us_states seed. Null when unmatched.
+      - name: customer_country
+        data_type: string
+        description: Country as spelled in the ERP; standardised against the countries seed in gold.
+      - name: customer_continent
+        data_type: string
+      - name: customer_postal_code
+        data_type: int
+      - name: customer_gender
+        data_type: string
+        description: Lower-cased, trimmed gender from the ERP.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

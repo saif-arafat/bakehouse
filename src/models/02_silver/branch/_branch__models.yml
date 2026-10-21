@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: franchise
+    description: >
+      One row per bakery franchise (branch) from the ERP (franchise_id + created date, since the ERP can
+      reuse an id), carrying the id of its single ingredient supplier. Location is stored as an EWKT point (SRID 4326).
+    config:
+      tags: ["branch"]
+      databricks_tags:
+        domain: branch
+        source_system: erp
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [franchise_id, franchise_created_date]
+    columns:
+      - name: franchise_sk
+        data_type: string
+        description: Surrogate key, hash of franchise_id and franchise_created_date.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_franchise
+        data_tests: [unique]
+      - name: franchise_id
+        data_type: bigint
+        description: Natural key from the ERP (franchiseID). Not unique on its own once an id is reused.
+        data_tests: [not_null]
+      - name: franchise_created_date
+        data_type: date
+        description: When the ERP created the franchise; with franchise_id it forms the business key.
+      - name: franchise_valid_from
+        data_type: date
+        description: >
+          First event date this row owns its franchise_id. The id's first row opens at 1900-01-01 so events
+          dated before the created date still resolve; later rows start at their franchise_created_date.
+      - name: franchise_valid_to
+        data_type: date
+        description: Exclusive end, the date the next franchise took over this franchise_id. Null while current.
+      - name: supplier_id
+        data_type: bigint
+        description: >
+          The franchise's ingredient supplier, as its ERP id. Resolved to supplier_sk in dim_franchise
+          against the supplier currently holding the id.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('supplier')
+                field: supplier_id
+              config:
+                severity: warn
+      - name: franchise_name
+        data_type: string
+      - name: franchise_city
+        data_type: string
+      - name: franchise_district
+        data_type: string
+      - name: franchise_zipcode
+        data_type: string
+      - name: franchise_country
+        data_type: string
+        description: Country as spelled in the ERP; standardised against the countries seed in gold.
+      - name: franchise_size
+        data_type: string
+      - name: franchise_location
+        data_type: string
+        description: "Franchise coordinates as an EWKT point string: SRID=4326;POINT(lon lat)."
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

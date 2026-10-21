@@ -1,0 +1,95 @@
+version: 2
+
+models:
+  - name: brz_erp__customer
+    description: Raw copy of ERP customers (samples.bakehouse.sales_customers). One row per customer.
+    config:
+      tags: ["erp", "customer", "pii"]
+      databricks_tags:
+        domain: customer
+        source_system: erp
+        contains_pii: "true"
+    columns:
+      - name: customerid
+        description: Natural key of the customer in the ERP.
+        data_tests: [unique, not_null]
+      - name: first_name
+        config:
+          databricks_tags: {pii: name}
+      - name: last_name
+        config:
+          databricks_tags: {pii: name}
+      - name: email_address
+        config:
+          databricks_tags: {pii: email}
+      - name: phone_number
+        description: Free-text phone number, may contain an extension (e.g. "x123").
+        config:
+          databricks_tags: {pii: phone}
+      - name: address
+        description: Street address.
+        config:
+          databricks_tags: {pii: address}
+      - name: state
+        description: State as entered in the ERP; a mix of USPS codes and full names (see the us_states seed).
+      - name: created_date
+        description: >
+          Date the customer was created in the ERP. Assumed to be 2026-10-19 for every customer.
+
+  - name: brz_erp__franchise
+    description: Raw copy of ERP franchises (samples.bakehouse.sales_franchises). One row per franchise.
+    config:
+      tags: ["erp", "branch"]
+      databricks_tags:
+        domain: branch
+        source_system: erp
+    columns:
+      - name: franchiseID
+        description: Natural key of the franchise in the ERP.
+        data_tests: [unique, not_null]
+      - name: supplierID
+        description: The franchise's ingredient supplier.
+      - name: created_date
+        description: >
+          Date the franchise was created in the ERP. Assumed to be
+          as 2026-10-19 for every franchise.
+
+  - name: brz_erp__supplier
+    description: Raw copy of ERP suppliers (samples.bakehouse.sales_suppliers). One row per supplier.
+    config:
+      tags: ["erp", "supply"]
+      databricks_tags:
+        domain: supply
+        source_system: erp
+    columns:
+      - name: supplierID
+        description: Natural key of the supplier in the ERP.
+        data_tests: [unique, not_null]
+      - name: ingredient
+        description: The ingredient the supplier provides.
+      - name: approved
+        description: Approval flag as a Y/N string.
+      - name: created_date
+        description: >
+          Date the supplier was created in the ERP. Assumed to be 2026-10-19 for every supplier.
+
+  - name: brz_erp__transaction
+    description: >
+      Raw copy of ERP sales transactions (samples.bakehouse.sales_transactions). One row per transaction.
+      Incremental append: only rows newer than the latest dateTime already loaded are added.
+    config:
+      tags: ["erp", "sales", "pii"]
+      databricks_tags:
+        domain: sales
+        source_system: erp
+        contains_pii: "true"
+    columns:
+      - name: transactionID
+        description: Natural key of the transaction in the ERP.
+        data_tests: [unique, not_null]
+      - name: dateTime
+        description: When the transaction happened; also the incremental watermark.
+      - name: cardNumber
+        description: Payment card number.
+        config:
+          databricks_tags: {pii: payment_card}

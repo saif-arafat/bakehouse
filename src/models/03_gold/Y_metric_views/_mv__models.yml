@@ -1,0 +1,28 @@
+version: 2
+
+models:
+
+  - name: sales_metrics
+    description: >
+      Databricks metric view over fct_sales: revenue, units, transactions, customers and average values,
+      sliced by sale date, franchise (and its country), customer (non-PII attributes), product and payment
+      method. One metric view per fact; reviews are in review_metrics. Query measures with
+      MEASURE(), e.g. SELECT franchise_country, MEASURE(total_revenue) FROM sales_metrics GROUP BY ALL.
+      Field and measure descriptions live in the YAML definition, since persist_docs doesn't apply to metric views.
+    config:
+      tags: ["mart", "sales", "metric_view"]
+      databricks_tags:
+        domain: sales
+        model_type: metric_view
+
+  - name: review_metrics
+    description: >
+      Databricks metric view over fct_review: review volume, star ratings and review length, sliced by
+      review date and franchise (and its country). Franchise fields share names with sales_metrics so the
+      two can be compared at franchise grain. Query measures with MEASURE(), e.g.
+      SELECT franchise_name, MEASURE(avg_star_rating) FROM review_metrics GROUP BY ALL.
+    config:
+      tags: ["mart", "feedback", "metric_view"]
+      databricks_tags:
+        domain: feedback
+        model_type: metric_view

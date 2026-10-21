@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: state
+    description: >
+      Reference list of US states, districts and territories built from the us_states seed.
+      One row per ERP spelling of a state (a state can appear twice: as its code and as its full name).
+    config:
+      tags: ["core", "reference"]
+      databricks_tags:
+        domain: core
+        source_system: seed
+    columns:
+      - name: state_sk
+        data_type: string
+        description: Surrogate key, hash of state_from_erp.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_state
+        data_tests: [unique]
+      - name: state_from_erp
+        data_type: string
+        description: The state exactly as it appears in the ERP; the join key to customer data.
+        data_tests: [unique, not_null]
+      - name: state_raw_format
+        data_type: string
+        description: Whether state_from_erp is an abbreviation or a full name.
+      - name: state_state_code
+        data_type: string
+        description: Official two-letter USPS code.
+      - name: state_state_name
+        data_type: string
+      - name: state_type
+        data_type: string
+        description: State, District or Territory.
+      - name: state_fips_code
+        data_type: string
+        description: Two-digit FIPS code, kept as a string to preserve the leading zero.
+      - name: state_census_region
+        data_type: string
+      - name: state_census_division
+        data_type: string
+      - name: state_capital
+        data_type: string
+      - name: state_is_contiguous_us
+        data_type: boolean
+        description: True for the 48 contiguous states plus DC.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

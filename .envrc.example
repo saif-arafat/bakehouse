@@ -1,0 +1,15 @@
+# Load the repository-local dbt profile instead of ~/.dbt/profiles.yml.
+export DBT_PROFILES_DIR="$PWD/dbt_profiles"
+
+# Required by the production target. Leave blank for local OAuth development.
+export DBT_HOST="a.cloud.databricks.com"
+export DBT_ACCESS_TOKEN=""
+
+# Used directly by the local dev profile.
+export dev_schema="${USER}"
+export DBT_TARGET="dev"
+
+# Bundle variables kept out of databricks.yml
+export BUNDLE_VAR_prod_service_principal=""
+export BUNDLE_VAR_warehouse_id=""
+export DBT_WAREHOUSE_ID="$BUNDLE_VAR_warehouse_id"

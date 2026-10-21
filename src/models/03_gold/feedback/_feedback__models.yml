@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: fct_review
+    description: Review fact, one row per web review of a franchise, with an AI-extracted star rating and text metrics.
+    config:
+      tags: ["fact", "feedback"]
+      databricks_tags:
+        domain: feedback
+        model_type: fact
+    columns:
+      - name: review_sk
+        data_type: string
+        description: Surrogate key, hash of review_id.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_fct_review
+        data_tests: [unique]
+      - name: review_id
+        data_type: int
+        description: Natural key of the review.
+        data_tests: [unique, not_null]
+      - name: date_sk
+        data_type: string
+        description: The review date.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_review_date
+            to: ref('dim_date')
+            to_columns: [date_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_sk
+      - name: franchise_sk
+        data_type: string
+        description: >
+          The franchise being reviewed: the dim_franchise row whose validity window holds the review date
+          for the review's franchise_id. '-1' (unknown member) when none matches.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_review_franchise
+            to: ref('dim_franchise')
+            to_columns: [franchise_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_franchise')
+                field: franchise_sk
+          # reviews on the unknown member mean a franchise_id the dimension couldn't resolve
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<> '-1'"
+              config:
+                severity: warn
+      - name: review_datetime
+        data_type: timestamp
+      - name: review_text
+        data_type: string
+        description: Free-text review body.
+      - name: star_rating
+        data_type: decimal(2,1)
+        description: Star rating out of 5 stated in the review, extracted with ai_extract. Null when no rating is stated.
+      - name: has_star_rating
+        data_type: boolean
+        description: True when star_rating could be extracted; use it to filter before averaging ratings.
+      - name: review_word_count
+        data_type: int
+        description: Number of whitespace-separated words in review_text.
+      - name: review_char_count
+        data_type: int
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

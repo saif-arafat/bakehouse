@@ -1,0 +1,43 @@
+
+# This file defines dbt profiles for deployed dbt jobs.
+bakehouse:
+  target: dev # default target
+  outputs:
+
+    # Doing local development with the dbt CLI?
+    # Then you should create your own profile in your .dbt/profiles.yml using 'dbt init'
+    # (See README.md)
+
+    # The default target when deployed with the Databricks CLI
+    # N.B. when you use dbt from the command line, it uses the profile from .dbt/profiles.yml
+    dev:
+      type: databricks
+      method: http
+      threads: 4
+      catalog: workspace
+      schema: "{% if env_var('dev_schema', '') %}{{ env_var('dev_schema') }}{% else %}{{ var('dev_schema') }}{% endif %}"
+
+      # DBT_WAREHOUSE_ID locally (.envrc), the warehouse_id var when deployed
+      http_path: "/sql/1.0/warehouses/{{ env_var('DBT_WAREHOUSE_ID', var('warehouse_id', '')) }}"
+
+      # The workspace host / token are provided by Databricks
+      # the workspace host comes from the Databricks CLI profile (see databricks.yml)
+      host: "{{ env_var('DBT_HOST') }}"
+      token: "{{ env_var('DBT_ACCESS_TOKEN', '') }}"
+      # local development leaves DBT_ACCESS_TOKEN blank and signs in with OAuth instead
+      auth_type: "{{ 'oauth' if env_var('DBT_ACCESS_TOKEN', '') == '' else 'pat' }}"
+
+    # The production target when deployed with the Databricks CLI
+    prod:
+      type: databricks
+      method: http
+      catalog: workspace
+      schema: default
+
+      # DBT_WAREHOUSE_ID locally (.envrc), the warehouse_id var when deployed
+      http_path: "/sql/1.0/warehouses/{{ env_var('DBT_WAREHOUSE_ID', var('warehouse_id', '')) }}"
+
+      # The workspace host / token are provided by Databricks
+      # the workspace host comes from the Databricks CLI profile (see databricks.yml)
+      host: "{{ env_var('DBT_HOST') }}"
+      token: "{{ env_var('DBT_ACCESS_TOKEN') }}"

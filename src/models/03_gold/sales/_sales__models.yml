@@ -1,0 +1,123 @@
+version: 2
+
+models:
+  - name: fct_sales
+    description: Sales fact, one row per transaction (one product line), keyed to the conformed dimensions.
+    config:
+      tags: ["fact", "sales"]
+      databricks_tags:
+        domain: sales
+        model_type: fact
+    columns:
+      - name: transaction_sk
+        data_type: string
+        description: Surrogate key, hash of transaction_id.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_fct_sales
+        data_tests: [unique]
+      - name: transaction_id
+        data_type: bigint
+        description: Natural key from the ERP (transactionID).
+        data_tests: [unique, not_null]
+      - name: date_sk
+        data_type: string
+        description: The transaction date.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_sales_date
+            to: ref('dim_date')
+            to_columns: [date_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_sk
+      - name: customer_sk
+        data_type: string
+        description: >
+          The buying customer as they were at the sale: the dim_customer version whose validity window
+          holds the sale date for the transaction's customer_id. '-1' (unknown member) when none matches.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_sales_customer
+            to: ref('dim_customer')
+            to_columns: [customer_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
+          # sales on the unknown member mean a customer_id the dimension couldn't resolve
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<> '-1'"
+              config:
+                severity: warn
+      - name: customer_durable_sk
+        data_type: string
+        description: >
+          The buying customer across all their versions (dim_customer.customer_durable_sk); '-1' when unresolved.
+          Count distinct on this, not customer_sk, so a customer who changed is counted once.
+        data_tests: [not_null]
+      - name: franchise_sk
+        data_type: string
+        description: >
+          The franchise where the sale happened: the dim_franchise row whose validity window holds the sale
+          date for the transaction's franchise_id. '-1' (unknown member) when none matches.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_sales_franchise
+            to: ref('dim_franchise')
+            to_columns: [franchise_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_franchise')
+                field: franchise_sk
+          # sales on the unknown member mean a franchise_id the dimension couldn't resolve
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<> '-1'"
+              config:
+                severity: warn
+      - name: product_sk
+        data_type: string
+        description: The product sold.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_sales_product
+            to: ref('dim_product')
+            to_columns: [product_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_sk
+      - name: payment_method_sk
+        data_type: string
+        description: How the customer paid.
+        constraints:
+          - type: foreign_key
+            name: fk_fct_sales_payment_method
+            to: ref('dim_payment_method')
+            to_columns: [payment_method_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_payment_method')
+                field: payment_method_sk
+      - name: transaction_datetime
+        data_type: timestamp
+      - name: quantity
+        data_type: bigint
+        description: Units sold.
+      - name: unit_price
+        data_type: decimal(18,6)
+      - name: total_price
+        data_type: decimal(18,6)
+        description: Line revenue (quantity x unit price) as recorded by the ERP.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

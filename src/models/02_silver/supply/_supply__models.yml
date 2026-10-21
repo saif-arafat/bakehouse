@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: supplier
+    description: >
+      One row per ingredient supplier from the ERP (supplier_id + created date, since the ERP can reuse an id),
+      cleaned and typed. Location is stored as an EWKT point (SRID 4326).
+    config:
+      tags: ["supply"]
+      databricks_tags:
+        domain: supply
+        source_system: erp
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [supplier_id, supplier_created_date]
+    columns:
+      - name: supplier_sk
+        data_type: string
+        description: Surrogate key, hash of supplier_id and supplier_created_date.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_supplier
+        data_tests: [unique]
+      - name: supplier_id
+        data_type: bigint
+        description: Natural key from the ERP (supplierID). Not unique on its own once an id is reused.
+        data_tests: [not_null]
+      - name: supplier_created_date
+        data_type: date
+        description: When the ERP created the supplier; with supplier_id it forms the business key.
+      - name: supplier_valid_from
+        data_type: date
+        description: >
+          First date this row owns its supplier_id. The id's first row opens at 1900-01-01 so references
+          dated before the created date still resolve; later rows start at their supplier_created_date.
+      - name: supplier_valid_to
+        data_type: date
+        description: Exclusive end, the date the next supplier took over this supplier_id. Null while current.
+      - name: supplier_name
+        data_type: string
+      - name: material_name
+        data_type: string
+        description: The ingredient this supplier provides.
+      - name: supplier_continent
+        data_type: string
+      - name: supplier_city
+        data_type: string
+      - name: supplier_district
+        data_type: string
+      - name: supplier_size
+        data_type: string
+      - name: supplier_location
+        data_type: string
+        description: "Supplier coordinates as an EWKT point string: SRID=4326;POINT(lon lat)."
+      - name: is_approved
+        data_type: boolean
+        description: True when the ERP approved flag is 'Y'; anything else (including null) is false.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

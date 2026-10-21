@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: review
+    description: >
+      One row per web review of a franchise, with the star rating extracted from the free text by ai_extract.
+    config:
+      tags: ["web", "feedback", "ai"]
+      databricks_tags:
+        domain: feedback
+        source_system: web
+    columns:
+      - name: review_sk
+        data_type: string
+        description: Surrogate key, hash of review_id.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_review
+        data_tests: [unique]
+      - name: review_id
+        data_type: int
+        description: Natural key of the review (new_id in the source).
+        data_tests: [unique, not_null]
+      - name: franchise_id
+        data_type: bigint
+        description: >
+          The reviewed franchise's ERP id (franchiseID in the web source). Not a key on its own (ids can be
+          reused), so fct_review resolves it to franchise_sk using the review date.
+        data_tests:
+          # warn only: the web source isn't guaranteed to use ids the ERP knows
+          - relationships:
+              arguments:
+                to: ref('franchise')
+                field: franchise_id
+              config:
+                severity: warn
+      - name: review_text
+        data_type: string
+        description: Free-text review body.
+      - name: review_star_rating
+        data_type: decimal(2,1)
+        description: >
+          Star rating out of 5 that the review explicitly states, extracted with ai_extract. Null when the review states no rating.
+      - name: review_date
+        data_type: timestamp
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

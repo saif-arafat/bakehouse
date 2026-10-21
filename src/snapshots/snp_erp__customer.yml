@@ -1,0 +1,25 @@
+snapshots:
+  - name: snp_erp__customer
+    description: >
+      SCD2 history of ERP customers. The ERP only holds current state, so each run compares the tracked
+      columns to the last snapshot and closes/opens a version when any of them changed.
+    relation: ref('brz_erp__customer')
+    config:
+      database: bronze
+      schema: erp
+      tags: ["bronze", "customer", "pii"]
+      unique_key: [customerid, created_date]
+      strategy: check
+      check_cols:
+        - first_name
+        - last_name
+        - email_address
+        - phone_number
+        - address
+        - city
+        - state
+        - country
+        - continent
+        - postal_zip_code
+        - gender
+      hard_deletes: invalidate

@@ -1,0 +1,280 @@
+version: 2
+
+models:
+  - name: customer_value
+    description: >
+      One row per customer, built to answer "who deserves our attention?":
+      who drives revenue (value_tier), how customers group by behaviour (rfm_segment),
+      and who is slipping away (churn_risk, is_slipping_away).
+      All recency is measured against as_of_ts (the latest transaction), not today.
+    config:
+      tags: ["mart", "customer"]
+      databricks_tags:
+        domain: customer
+        model_type: mart
+    columns:
+      - name: customer_durable_sk
+        data_type: string
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_customer_value
+        data_tests:
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_durable_sk
+
+      # 1. who drives revenue
+      - name: total_revenue
+        data_type: decimal(28,6)
+      - name: order_count
+        data_type: bigint
+      - name: units_purchased
+        data_type: bigint
+      - name: avg_order_value
+        data_type: decimal(38,16)
+      - name: revenue_rank
+        data_type: int
+        description: 1 = highest-revenue customer.
+      - name: revenue_share
+        data_type: decimal(38,10)
+        description: This customer's share of total revenue (0-1).
+      - name: cumulative_revenue_share
+        data_type: decimal(38,6)
+        description: Running revenue share down the revenue_rank order, including this customer.
+      - name: value_tier
+        data_type: string
+        description: "ABC by cumulative revenue: A = first 50% of revenue, B = next 30%, C = tail."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['A', 'B', 'C', 'No Purchases']
+
+      # 2. behaviour
+      - name: first_purchase_ts
+        data_type: timestamp
+      - name: last_purchase_ts
+        data_type: timestamp
+      - name: tenure_days
+        data_type: decimal(28,7)
+        description: Days between first and last purchase.
+      - name: active_days
+        data_type: bigint
+        description: Distinct calendar days with at least one purchase.
+      - name: distinct_franchises
+        data_type: bigint
+      - name: distinct_products
+        data_type: bigint
+      - name: recency_score
+        data_type: int
+        description: RFM recency quintile, 5 = bought most recently.
+      - name: frequency_score
+        data_type: int
+        description: RFM frequency quintile, 5 = most orders.
+      - name: monetary_score
+        data_type: int
+        description: RFM monetary quintile, 5 = highest revenue.
+      - name: rfm_code
+        data_type: string
+        description: Recency, frequency and monetary scores concatenated, e.g. 545.
+      - name: rfm_segment
+        data_type: string
+        description: "Recency score (1-5) x average of frequency and monetary scores (1-5): Champions (recent, FM >= 2.5), At Risk (not recent, FM >= 2.5), Low Value (FM < 2.5)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Champions', 'At Risk', 'Low Value', 'No Purchases']
+
+      # 3. slipping away
+      - name: as_of_ts
+        data_type: timestamp
+        description: Latest transaction in fct_sales; the "now" every recency metric is measured against.
+      - name: days_since_last_purchase
+        data_type: decimal(28,7)
+      - name: avg_days_between_purchases
+        data_type: decimal(38,17)
+        description: The customer's own purchase rhythm. Null for one-time buyers.
+      - name: purchase_overdue_ratio
+        data_type: decimal(38,6)
+        description: "days_since_last_purchase / the customer's own average gap between purchases."
+      - name: revenue_recent_window
+        data_type: decimal(28,6)
+        description: Revenue in the last N days before as_of_ts (var customer_value_trend_window_days, default 7).
+      - name: revenue_prior_window
+        data_type: decimal(28,6)
+        description: Revenue in the N days before the recent window.
+      - name: revenue_trend_pct
+        data_type: decimal(38,9)
+        description: "Change in revenue between the last N days and the N days before (var customer_value_trend_window_days, default 7)."
+      - name: churn_risk
+        data_type: string
+        description: "Active (< 1.5 usual gaps since last purchase), At Risk (1.5-3), Lapsed (3+)."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Active', 'At Risk', 'Lapsed', 'No Purchases']
+      - name: is_slipping_away
+        data_type: boolean
+        description: "Tier A/B or high frequency-monetary customers who are At Risk/Lapsed or whose recent spend has halved."
+        data_tests: [not_null]
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: franchise_performance
+    description: >
+      One row per franchise, built to answer "where should we grow?":
+      which locations perform and which lag (performance_tier, is_underperforming),
+      what geography says about demand (country_* columns, repeated on every franchise in the country),
+      and where the case for a new branch is (expansion_case).
+      Demand is measured where sales happen, not where customers live: customer home countries don't line up
+      with the franchises they buy from. All trends are measured against as_of_ts (the latest transaction), not today.
+    config:
+      tags: ["mart", "branch"]
+      databricks_tags:
+        domain: branch
+        model_type: mart
+    columns:
+      - name: franchise_sk
+        data_type: string
+        description: The franchise; one row per row of dim_franchise, excluding the unknown member.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_franchise_performance
+          - type: foreign_key
+            name: fk_franchise_performance_franchise
+            to: ref('dim_franchise')
+            to_columns: [franchise_sk]
+        data_tests:
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_franchise')
+                field: franchise_sk
+      - name: geography_sk
+        data_type: string
+        description: The franchise's country.
+        constraints:
+          - type: foreign_key
+            name: fk_franchise_performance_geography
+            to: ref('dim_geography')
+            to_columns: [geography_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_geography')
+                field: geography_sk
+      
+
+      # 1. which locations perform, which lag
+      - name: total_revenue
+        data_type: decimal(28,6)
+      - name: order_count
+        data_type: bigint
+      - name: units_sold
+        data_type: bigint
+      - name: avg_order_value
+        data_type: decimal(38,16)
+      - name: distinct_customers
+        data_type: bigint
+      - name: repeat_customer_rate
+        data_type: decimal(6,5)
+        description: Share of the franchise's customers who ordered there more than once (0-1).
+      - name: active_days
+        data_type: bigint
+        description: Distinct calendar days with at least one sale.
+      - name: revenue_per_active_day
+        data_type: decimal(38,16)
+      - name: revenue_rank
+        data_type: int
+        description: 1 = highest-revenue franchise.
+      - name: revenue_share
+        data_type: decimal(38,10)
+        description: This franchise's share of network revenue (0-1).
+      - name: revenue_index
+        data_type: decimal(38,10)
+        description: Revenue / the median franchise's revenue. 1.0 = a typical franchise.
+      - name: revenue_vs_size_peers_index
+        data_type: decimal(38,10)
+        description: Revenue / the median revenue of franchises of the same franchise_size. 1.0 = typical for its size.
+      - name: review_count
+        data_type: bigint
+      - name: rated_review_count
+        data_type: bigint
+        description: Reviews with an extractable star rating; most reviews don't state one, so read avg_star_rating with this.
+      - name: avg_star_rating
+        data_type: decimal(6,5)
+        description: Average star rating out of 5 across rated reviews. Null when no review states a rating.
+      - name: as_of_ts
+        data_type: timestamp
+        description: Latest transaction in fct_sales; the "now" every trend is measured against.
+      - name: revenue_recent_window
+        data_type: decimal(28,6)
+        description: Revenue in the last N days before as_of_ts (var franchise_performance_trend_window_days, default 7).
+      - name: revenue_prior_window
+        data_type: decimal(28,6)
+        description: Revenue in the N days before the recent window.
+      - name: revenue_trend_pct
+        data_type: decimal(38,9)
+        description: Change in revenue between the last N days and the N days before.
+      - name: performance_tier
+        data_type: string
+        description: "By network revenue percentile: Leading = top 25%, On Par = middle 50%, Lagging = bottom 25%."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Leading', 'On Par', 'Lagging', 'No Sales']
+      - name: is_underperforming
+        data_type: boolean
+        description: "Lagging (or no sales) and below the median of its own size class, so not just a small store."
+        data_tests: [not_null]
+
+      # 2. what geography says about demand
+      - name: country_franchise_count
+        data_type: bigint
+      - name: city_franchise_count
+        data_type: bigint
+        description: Franchises in the same city; above 1 means branches may be splitting local demand.
+      - name: country_revenue
+        data_type: decimal(38,6)
+      - name: share_of_country_revenue
+        data_type: decimal(38,10)
+        description: This franchise's share of its country's revenue (0-1).
+      - name: country_revenue_per_franchise
+        data_type: decimal(38,6)
+      - name: country_demand_index
+        data_type: decimal(38,6)
+        description: "country_revenue_per_franchise / network revenue per franchise. Above 1: each branch in this country sells more than the network average."
+      - name: country_distinct_customers
+        data_type: bigint
+        description: Distinct customers who bought at any franchise in the country.
+      - name: country_avg_star_rating
+        data_type: decimal(38,6)
+        description: Star rating averaged across every rated review in the country.
+      - name: country_revenue_trend_pct
+        data_type: decimal(38,6)
+        description: Change in country revenue between the last N days and the N days before.
+
+      # 3. where is the case for a new branch
+      - name: expansion_case
+        data_type: string
+        description: >
+          Fix First = underperforming, fix before growing nearby;
+          Expand Market = country demand index >= 1.2, this branch at or above the median franchise,
+          country revenue not down more than 50% and rated 3+ stars: a second branch in the country;
+          Capacity Strain = 1.5x+ the revenue of same-size peers and alone in its city: demand is outgrowing the footprint,
+          a case for another branch in the city or upsizing;
+          Hold = none of the above.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Fix First', 'Expand Market', 'Capacity Strain', 'Hold']
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

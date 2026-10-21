@@ -1,0 +1,501 @@
+version: 2
+
+# Conformed dimensions shared by every fact and mart in gold.
+
+models:
+  - name: dim_customer
+    description: >
+      Customer dimension, SCD2: one row per version of an ERP customer (customer_id + created date),
+      enriched with US state attributes and linked to dim_geography at country grain. Facts pick the
+      version whose customer_valid_from/to window holds the sale date; customer_durable_sk groups a
+      customer's versions and customer_is_current flags the latest. Includes an unknown member (customer_sk '-1').
+    config:
+      tags: ["dimension", "customer", "pii"]
+      databricks_tags:
+        domain: customer
+        model_type: dimension
+        contains_pii: "true"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_id, customer_created_date, customer_valid_from]
+          config:
+            # several changes on one day share a valid_from; only the last one is matchable
+            severity: warn
+    columns:
+      - name: customer_sk
+        data_type: string
+        description: >
+          Surrogate key of the version, hash of customer_id, customer_created_date and the snapshot's
+          dbt_valid_from; '-1' for the unknown member.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_customer
+        data_tests: [unique]
+      - name: customer_durable_sk
+        data_type: string
+        description: >
+          Stable key of the customer across versions, hash of customer_id and customer_created_date;
+          '-1' for the unknown member. Group or count distinct on this to treat a customer as one.
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: customer_is_current
+      - name: geography_sk
+        data_type: string
+        description: The customer's country.
+        constraints:
+          - type: foreign_key
+            name: fk_dim_customer_geography
+            to: ref('dim_geography')
+            to_columns: [geography_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_geography')
+                field: geography_sk
+      - name: customer_id
+        data_type: bigint
+        description: >
+          Natural key from the ERP (customerID); -1 for the unknown member. Not unique once an id is reused
+          or a customer changes.
+        data_tests: [not_null]
+      - name: customer_created_date
+        data_type: date
+        description: When the ERP created the customer; with customer_id it forms the business key.
+      - name: customer_valid_from
+        data_type: date
+        description: >
+          First sale date this version owns its customer_id. The id's first version opens at 1900-01-01 so
+          sales dated before the created date still resolve.
+      - name: customer_valid_to
+        data_type: date
+        description: >
+          Exclusive end, the date the next version (a change, or a new customer taking over the id) starts.
+          Null for the id's latest version.
+      - name: customer_is_current
+        data_type: boolean
+        description: True for the customer's latest version (and the unknown member).
+      - name: customer_full_name
+        data_type: string
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_first_name
+        data_type: string
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_last_name
+        data_type: string
+        config:
+          databricks_tags: {pii: name}
+      - name: customer_email
+        data_type: string
+        config:
+          databricks_tags: {pii: email}
+      - name: customer_phone_number
+        data_type: bigint
+        description: Phone number as digits only, with any extension removed.
+        config:
+          databricks_tags: {pii: phone}
+      - name: customer_gender
+        data_type: string
+      - name: customer_address
+        data_type: string
+        description: Street address.
+        config:
+          databricks_tags: {pii: address}
+      - name: customer_city
+        data_type: string
+      - name: customer_postal_code
+        data_type: int
+      - name: customer_state
+        data_type: string
+        description: Full state name. Null when the ERP value did not match the us_states seed.
+      - name: customer_state_code
+        data_type: string
+        description: Two-letter USPS state code.
+      - name: customer_state_type
+        data_type: string
+        description: State, District or Territory.
+      - name: customer_census_region
+        data_type: string
+      - name: customer_census_division
+        data_type: string
+      - name: customer_is_contiguous_us
+        data_type: boolean
+      - name: customer_country
+        data_type: string
+        description: Country as spelled in the ERP; use dim_geography for the standard name.
+      - name: customer_continent
+        data_type: string
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_date
+    description: >
+      Calendar dimension, one row per day from 2000-01-01 to 2059-12-31.
+      Weeks follow ISO 8601 (start Monday, week 1 contains the first Thursday).
+    config:
+      tags: ["dimension", "calendar"]
+      databricks_tags:
+        domain: calendar
+        model_type: dimension
+    columns:
+      - name: date_sk
+        data_type: string
+        description: Surrogate key, hash of date_date.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_date
+        data_tests: [unique]
+      - name: date_int
+        data_type: int
+        description: Date as a yyyyMMdd integer, e.g. 20261017.
+        data_tests: [unique, not_null]
+      - name: date_date
+        data_type: date
+        description: The calendar date; the join key from facts.
+        data_tests: [unique, not_null]
+      - name: date_year
+        data_type: int
+      - name: year_start_date
+        data_type: date
+      - name: year_end_date
+        data_type: date
+      - name: date_day_of_year
+        data_type: int
+      - name: is_leap_year
+        data_type: boolean
+      - name: date_quarter
+        data_type: int
+      - name: quarter_name
+        data_type: string
+        description: e.g. Q4
+      - name: year_quarter
+        data_type: string
+        description: e.g. 2026-Q4
+      - name: quarter_start_date
+        data_type: date
+      - name: quarter_end_date
+        data_type: date
+      - name: date_month
+        data_type: int
+      - name: month_name
+        data_type: string
+      - name: month_name_short
+        data_type: string
+      - name: year_month
+        data_type: string
+        description: e.g. 2026-10
+      - name: month_start_date
+        data_type: date
+      - name: month_end_date
+        data_type: date
+      - name: days_in_month
+        data_type: int
+      - name: is_month_start
+        data_type: boolean
+      - name: is_month_end
+        data_type: boolean
+      - name: iso_week_of_year
+        data_type: int
+      - name: iso_year
+        data_type: int
+        description: ISO week-numbering year; differs from date_year for some days around 1 January.
+      - name: iso_year_week
+        data_type: string
+        description: e.g. 2026-W42
+      - name: week_start_date
+        data_type: date
+        description: Monday of the ISO week.
+      - name: week_end_date
+        data_type: date
+        description: Sunday of the ISO week.
+      - name: date_day_of_month
+        data_type: int
+      - name: date_day_of_week
+        data_type: int
+        description: 1 = Sunday ... 7 = Saturday (Spark convention). See iso_day_of_week for Monday-based.
+      - name: iso_day_of_week
+        data_type: int
+        description: 1 = Monday ... 7 = Sunday.
+      - name: day_name
+        data_type: string
+      - name: day_name_short
+        data_type: string
+      - name: is_weekend
+        data_type: boolean
+        description: Saturday or Sunday.
+      - name: is_weekday
+        data_type: boolean
+      - name: prior_day_date
+        data_type: date
+      - name: same_day_prior_year_date
+        data_type: date
+        description: Same day one year earlier; 29 February maps to 28 February.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_franchise
+    description: >
+      Franchise dimension, one row per franchise (franchise_id + created date). The franchise's single
+      supplier is denormalised onto it so consumers don't need a dim_supplier join. Facts pick the row whose
+      franchise_valid_from/to window holds the event date. Includes an unknown member (franchise_sk '-1').
+    config:
+      tags: ["dimension", "branch"]
+      databricks_tags:
+        domain: branch
+        model_type: dimension
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [franchise_id, franchise_created_date]
+    columns:
+      - name: franchise_sk
+        data_type: string
+        description: Surrogate key, hash of franchise_id and franchise_created_date; '-1' for the unknown member.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_franchise
+        data_tests: [unique]
+      - name: geography_sk
+        data_type: string
+        description: The franchise's country.
+        constraints:
+          - type: foreign_key
+            name: fk_dim_franchise_geography
+            to: ref('dim_geography')
+            to_columns: [geography_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_geography')
+                field: geography_sk
+      - name: franchise_id
+        data_type: bigint
+        description: Natural key from the ERP (franchiseID); -1 for the unknown member. Not unique once an id is reused.
+        data_tests: [not_null]
+      - name: franchise_created_date
+        data_type: date
+        description: When the ERP created the franchise; with franchise_id it forms the business key.
+      - name: franchise_valid_from
+        data_type: date
+        description: >
+          First event date this row owns its franchise_id. The id's first row opens at 1900-01-01 so events
+          dated before the created date still resolve.
+      - name: franchise_valid_to
+        data_type: date
+        description: Exclusive end, the date the next franchise took over this franchise_id. Null while current.
+      - name: franchise_name
+        data_type: string
+      - name: franchise_size
+        data_type: string
+      - name: franchise_city
+        data_type: string
+      - name: franchise_district
+        data_type: string
+      - name: franchise_zipcode
+        data_type: string
+      - name: franchise_country
+        data_type: string
+        description: Country as spelled in the ERP; use dim_geography for the standard name.
+      - name: franchise_location
+        data_type: string
+        description: "Franchise coordinates as an EWKT point string: SRID=4326;POINT(lon lat)."
+      - name: supplier_sk
+        data_type: string
+        description: >
+          The franchise's ingredient supplier: the supplier currently holding the franchise's supplier_id.
+          '-1' (unknown member) when none does.
+        constraints:
+          - type: foreign_key
+            name: fk_dim_franchise_supplier
+            to: ref('dim_supplier')
+            to_columns: [supplier_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_supplier')
+                field: supplier_sk
+      - name: supplier_id
+        data_type: bigint
+        description: The supplier's ERP id as recorded on the franchise, kept even when no supplier matches.
+      - name: supplier_name
+        data_type: string
+      - name: supplier_material_name
+        data_type: string
+        description: The ingredient the supplier provides.
+      - name: supplier_continent
+        data_type: string
+      - name: supplier_city
+        data_type: string
+      - name: is_supplier_approved
+        data_type: boolean
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_geography
+    description: >
+      Geography dimension at country grain, one row per standard country name.
+      Country is the only level shared cleanly across sources (customer city/state values are synthetic
+      and suppliers carry no country). Countries missing from the countries seed still appear, with null codes.
+    config:
+      tags: ["dimension", "geography"]
+      databricks_tags:
+        domain: geography
+        model_type: dimension
+    columns:
+      - name: geography_sk
+        data_type: string
+        description: Surrogate key, hash of country_name.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_geography
+        data_tests: [unique]
+      - name: country_name
+        data_type: string
+        description: Standard English country name from the countries seed (falls back to the ERP spelling).
+        data_tests: [unique, not_null]
+      - name: country_iso2_code
+        data_type: string
+        description: ISO 3166-1 alpha-2 code.
+      - name: country_iso3_code
+        data_type: string
+        description: ISO 3166-1 alpha-3 code.
+      - name: country_subregion
+        data_type: string
+        description: UN M49 sub-region.
+      - name: country_continent
+        data_type: string
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_payment_method
+    description: One row per payment method seen on transactions.
+    config:
+      tags: ["dimension", "sales"]
+      databricks_tags:
+        domain: sales
+        model_type: dimension
+    columns:
+      - name: payment_method_sk
+        data_type: string
+        description: Surrogate key, hash of payment_method_code.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_payment_method
+        data_tests: [unique]
+      - name: payment_method_code
+        data_type: string
+        description: Lower-cased, trimmed payment method from the ERP; the join key from fct_sales.
+        data_tests: [unique, not_null]
+      - name: payment_method_name
+        data_type: string
+        description: Display name, e.g. American Express.
+      - name: payment_method_type
+        data_type: string
+        description: Card for known card networks; Other for anything not yet mapped.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Card', 'Other']
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_product
+    description: One row per product sold.
+    config:
+      tags: ["dimension", "product"]
+      databricks_tags:
+        domain: product
+        model_type: dimension
+    columns:
+      - name: product_sk
+        data_type: string
+        description: Surrogate key, hash of product_name.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_product
+        data_tests: [unique]
+      - name: product_name
+        data_type: string
+        data_tests: [unique, not_null]
+      - name: product_unit_price
+        data_type: decimal(18,6)
+        description: Highest unit price ever charged for the product.
+      - name: product_first_sold_date
+        data_type: date
+        description: Date of the product's first transaction. The ERP has no product master, so this is not a launch date.
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        
+
+  - name: dim_supplier
+    description: >
+      One row per ingredient supplier (supplier_id + created date). Includes an unknown member (supplier_sk '-1').
+    config:
+      tags: ["dimension", "supply"]
+      databricks_tags:
+        domain: supply
+        model_type: dimension
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [supplier_id, supplier_created_date]
+    columns:
+      - name: supplier_sk
+        data_type: string
+        description: Surrogate key, hash of supplier_id and supplier_created_date; '-1' for the unknown member.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_dim_supplier
+        data_tests: [unique]
+      - name: supplier_id
+        data_type: bigint
+        description: Natural key from the ERP (supplierID); -1 for the unknown member. Not unique once an id is reused.
+        data_tests: [not_null]
+      - name: supplier_created_date
+        data_type: date
+        description: When the ERP created the supplier; with supplier_id it forms the business key.
+      - name: supplier_valid_from
+        data_type: date
+        description: >
+          First date this row owns its supplier_id. The id's first row opens at 1900-01-01 so references
+          dated before the created date still resolve.
+      - name: supplier_valid_to
+        data_type: date
+        description: Exclusive end, the date the next supplier took over this supplier_id. Null while current.
+      - name: supplier_name
+        data_type: string
+      - name: supplier_material_name
+        data_type: string
+        description: The ingredient the supplier provides.
+      - name: supplier_size
+        data_type: string
+      - name: is_supplier_approved
+        data_type: boolean
+      - name: supplier_city
+        data_type: string
+      - name: supplier_district
+        data_type: string
+      - name: supplier_continent
+        data_type: string
+      - name: supplier_location
+        data_type: string
+        description: "Supplier coordinates as an EWKT point string: SRID=4326;POINT(lon lat)."
+      - name: md_loaded_at_ts
+        data_type: timestamp
+        

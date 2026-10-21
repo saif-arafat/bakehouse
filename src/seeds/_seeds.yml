@@ -1,0 +1,45 @@
+version: 2
+
+seeds:
+  - name: us_states
+    description: USPS state, district and territory codes with full names.
+    config:
+      column_types:
+        fips_code: string
+    columns:
+      - name: state_from_erp
+        description: The state code as it appears in the ERP system.
+      - name: raw_format
+        description: The format of the state code (e.g., abbreviation, full name).
+      - name: state_code
+        description: The official USPS state code.
+      - name: state_name
+        description: The full name of the state.
+      - name: type
+        description: The type of region (e.g., State, District, Territory).
+      - name: fips_code
+        description: The FIPS code for the state.
+      - name: census_region
+        description: The census region the state belongs to.
+      - name: census_division
+        description: The census division the state belongs to.
+      - name: capital
+        description: The capital city of the state.
+      - name: is_contiguous_us
+        description: Indicates if the state is part of the contiguous United States (true/false).
+
+  - name: countries
+    description: Maps each ERP country spelling to a standard country name, ISO codes and UN M49 region.
+    columns:
+      - name: country_from_erp
+        description: The country as it appears in the ERP system (e.g., US, USA).
+      - name: country_name
+        description: The standard English country name.
+      - name: iso2_code
+        description: ISO 3166-1 alpha-2 country code.
+      - name: iso3_code
+        description: ISO 3166-1 alpha-3 country code.
+      - name: continent
+        description: The continent the country belongs to.
+      - name: subregion
+        description: The UN M49 sub-region the country belongs to.

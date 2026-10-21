@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: transaction
+    description: >
+      One row per ERP sales transaction (one product line per transaction).
+      Incremental merge on transaction_id with a 3-day lookback for late-arriving rows.
+      The product key is a hash of the product name; customer and franchise stay as ERP ids and are
+      resolved to their keys by sale date in fct_sales.
+    config:
+      tags: ["sales", "pii"]
+      databricks_tags:
+        domain: sales
+        source_system: erp
+        contains_pii: "true"
+    columns:
+      - name: transaction_sk
+        data_type: string
+        description: Surrogate key, hash of transaction_id.
+        constraints:
+          - type: not_null
+          - type: primary_key
+            name: pk_transaction
+        data_tests: [unique]
+      - name: transaction_id
+        data_type: bigint
+        description: Natural key from the ERP (transactionID); the incremental merge key.
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_type: bigint
+        description: >
+          The buying customer's ERP id. Not a key on its own (ids can be reused), so fct_sales
+          resolves it to customer_sk using the sale date.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('customer')
+                field: customer_id
+      - name: franchise_id
+        data_type: bigint
+        description: >
+          The ERP id of the franchise where the sale happened. Not a key on its own (ids can be reused),
+          so fct_sales resolves it to franchise_sk using the sale date.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('franchise')
+                field: franchise_id
+      - name: product_sk
+        data_type: string
+        description: The product sold.
+        constraints:
+          - type: foreign_key
+            name: fk_transaction_product
+            to: ref('product')
+            to_columns: [product_sk]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('product')
+                field: product_sk
+      - name: transaction_datetime
+        data_type: timestamp
+      - name: transaction_quantity
+        data_type: bigint
+      - name: transaction_unit_price
+        data_type: decimal(18,6)
+      - name: transaction_total_price
+        data_type: decimal(18,6)
+        description: Quantity x unit price, as recorded by the ERP.
+      - name: transaction_payment_method
+        data_type: string
+        description: Card network as entered in the ERP (e.g. visa, amex); standardised in gold dim_payment_method.
+      - name: transaction_card_number
+        data_type: bigint
+        description: Payment card number.
+        config:
+          databricks_tags: {pii: payment_card}
+      - name: md_loaded_at_ts
+        data_type: timestamp

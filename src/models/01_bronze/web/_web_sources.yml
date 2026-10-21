@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: web
+    database: samples
+    schema: bakehouse
+    tables:
+      - name: media_customer_reviews
+      - name: media_gold_reviews_chunked

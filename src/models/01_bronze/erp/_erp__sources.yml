@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: erp
+    database: samples
+    schema: bakehouse
+    tables:
+      - name: sales_customers
+      - name: sales_franchises
+      - name: sales_suppliers
+      - name: sales_transactions

@@ -1,0 +1,41 @@
+version: 2
+
+# Bronze is a raw SELECT * copy of samples.bakehouse, so there is no contract (and no PK/FK constraints) here;
+# only columns that need a comment are listed.
+
+models:
+  - name: brz_web__review
+    description: Raw copy of customer reviews scraped from the web (samples.bakehouse.media_customer_reviews). One row per review.
+    config:
+      tags: ["web", "feedback"]
+      databricks_tags:
+        domain: feedback
+        source_system: web
+    columns:
+      - name: new_id
+        description: Natural key of the review.
+        data_tests: [unique, not_null]
+      - name: franchiseID
+        description: The franchise the review is about.
+      - name: review
+        description: Free-text review body.
+
+  - name: brz_web__review_chunked
+    description: >
+      Raw copy of web reviews split into text chunks (samples.bakehouse.media_gold_reviews_chunked).
+      One row per chunk, intended for vector search / RAG.
+    config:
+      tags: ["web", "feedback"]
+      databricks_tags:
+        domain: feedback
+        source_system: web
+    columns:
+      - name: chunk_id
+        description: >
+          Identifier of the chunk text. Not unique: the source repeats the same chunk under
+          several franchiseID / review_date combinations.
+        data_tests: [not_null]
+      - name: chunked_text
+        description: The text of this chunk of the review.
+      - name: review_uri
+        description: URI of the original review the chunk came from.
